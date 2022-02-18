@@ -6,7 +6,7 @@ For a quick start try to run one of the two main codes below:
 ## To fit TESS transits only:
 
 ```
-python transit_fit.py --object="55 Cnc" -vp
+python transit_fit.py --object="HATS-24" -vp
 ```
 
 ## To fit TESS transits and RV data simultaneously:
