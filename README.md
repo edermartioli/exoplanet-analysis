@@ -15,4 +15,6 @@ python transit_fit.py --object="HATS-24" -vp
 python transit_rv_fit.py --object="TOI-1759" --rvdata=example/lbl_TOI-1759_GL846_drift.rdb --nsteps=10000 --burnin=2000 -vp
 ```
 
+* Note: the 'object' ID must be identified by SIMBAD.
+
 If you're using this code, please cite [Martioli et al. (2022)](https://ui.adsabs.harvard.edu/abs/2022arXiv220201259M/abstract)
