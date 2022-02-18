@@ -1,0 +1,29 @@
+# The following Prior_Type options are available:
+#   id  FIXED   value
+#   id  Uniform min_value,max_value,initial_guess
+#   id  Jeffreys min_value,max_value,initial_guess
+#   id  Normal mean,sigma
+#   id  Normal_positive mean,sigma
+#
+# Parameter_ID    Prior_Type    Hyperparameters  Initial_guess(optional)
+#
+blong_mean     Uniform   -1e100,1e100,0.
+blong_white_noise     Uniform   -1e100,1e100,0.
+blong_amplitude     Uniform   0,1e100,1.0
+rv_mean     Uniform   -1e100,1e100,0.
+rv_white_noise     Uniform   -1e100,1e100,0.
+rv_amplitude     Uniform   0,1e100,1.0
+phot_mean     Uniform   -1e100,1e100,0.
+phot_white_noise     Uniform   -1e100,1e100,0.
+phot_amplitude     Uniform   0,1e100,1.0
+rv_decaytime     Uniform   50,1000,200
+rv_smoothfactor     Uniform   0.1,1.5,1.0
+#rv_smoothfactor     FIXED   0.2
+blong_decaytime     Uniform   50,1000,200
+blong_smoothfactor     Uniform   0.1,1.5,1.0
+#blong_smoothfactor     FIXED   0.2
+phot_decaytime     Uniform   50,1000,200
+phot_smoothfactor     Uniform   0.1,1.5,1.0
+#phot_smoothfactor     FIXED   0.2
+#prot     Uniform   2,300,35.65
+prot     Normal   35.65,0.2
