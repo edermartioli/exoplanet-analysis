@@ -1,0 +1,16 @@
+# Parameter_ID	Prior_Type	Values
+teff_000 FIXED 4075,75
+ms_000 FIXED 0.61,0.02
+rs_000 FIXED 0.598,0.029
+k_000	Uniform	-100,100.,3.0
+rvsys_000	FIXED	0.
+trend_000	FIXED	0.
+tc_000	Uniform	1745.3,1745.6,1745.466
+per_000	Uniform	18.5,19.5,18.85
+a_000	Uniform	20,60,40.3
+rp_000	Uniform	0.03,0.07,0.049
+inc_000	Normal	89.,0.5
+ecc_000	FIXED	0.
+w_000	FIXED	90.
+u0_000	Uniform	0.,3.,0.4040
+u1_000	Uniform	0.,3.,0.2522
