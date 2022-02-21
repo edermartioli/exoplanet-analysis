@@ -86,7 +86,7 @@ for planet in tesslc["PLANETS"] :
     priors = fitlib.read_priors(planet_priors_files, len(times), calib_polyorder=calib_polyorder, verbose=False)
 
     # Fit calibration parameters for initial guess
-    priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal", batman=True)
+    priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal")
 
     if options.plot :
         # plot light curves and models in priors
@@ -95,9 +95,9 @@ for planet in tesslc["PLANETS"] :
     posterior = priors
 
     # OLS fit involving all priors
-    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="Normal", calib_unc=0.01, batman=True, verbose=False, plot=False)
+    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="Normal", calib_unc=0.01, verbose=False, plot=False)
     # OLS fit involving all priors
-    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="FIXED", batman=True, verbose=False, plot=False)
+    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="FIXED", verbose=False, plot=False)
 
     if options.plot :
         fitlib.plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, posterior)

@@ -5,7 +5,6 @@ Created on Wed November 4 2020
 Institut d'Astrophysique de Paris, France.
 """
 
-import exoplanet as xo
 import numpy as np
 import batman
 
@@ -80,35 +79,6 @@ def flares_model(flare_params, flare_tags, index, time) :
 
     flare_model = aflare(time, pflares)
     return flare_model
-
-
-def transit_model(time, planet_params, planet_index=0) :
-
-    m_star=planet_params['ms_{0:03d}'.format(planet_index)]
-    r_star=planet_params['rs_{0:03d}'.format(planet_index)]
-    period = planet_params['per_{0:03d}'.format(planet_index)]
-    tc = planet_params['tc_{0:03d}'.format(planet_index)]
-    b = planet_params['b_{0:03d}'.format(planet_index)]
-    rp = planet_params['rp_{0:03d}'.format(planet_index)]
-    u0 = planet_params['u0_{0:03d}'.format(planet_index)]
-    u1 = planet_params['u1_{0:03d}'.format(planet_index)]
-    
-    u = [u0,u1]
-    
-    # The light curve calculation requires an orbit
-    orbit = xo.orbits.KeplerianOrbit(period=period, t0=tc, b=b, m_star=m_star, r_star=r_star)
-        
-    #if len(time[orbit.in_transit(time, r=rp)]) :
-    
-    # Compute a limb-darkened light curve using starry
-    light_curve = (
-                   xo.LimbDarkLightCurve(u)
-                   .get_light_curve(orbit=orbit, r=rp, t=time)
-                   .eval()
-                   )
-    out_light_curve = np.array(light_curve[:,0], dtype=float) + 1.
-    
-    return out_light_curve
 
 
 def batman_transit_model(time, planet_params, planet_index=0) :

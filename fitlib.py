@@ -466,7 +466,7 @@ def read_priors(planet_priors_files, n_datasets, flare_priorsfile="", calib_prio
     return loc
 
 
-def guess_calib(priors, times, fluxes, batman=False, prior_type="FIXED", remove_flares=True, remove_transits=True, plot=False) :
+def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, remove_transits=True, plot=False) :
     
     calib_polyorder = priors["calib_polyorder"]
     calib_priors = priors["calib_priors"]
@@ -488,11 +488,7 @@ def guess_calib(priors, times, fluxes, batman=False, prior_type="FIXED", remove_
         if remove_transits :
             transit_models = np.full_like(times[i], 1.0)
             for j in range(len(priors["planet_params"])) :
-                if batman :
-                    transit_models *= modelslib.batman_transit_model(times[i], priors["planet_params"][j], planet_index=j)
-                else :
-                    transit_models *= modelslib.transit_model(times[i], priors["planet_params"][j], planet_index=j)
-
+                transit_models *= modelslib.batman_transit_model(times[i], priors["planet_params"][j], planet_index=j)
             fluxes_copy[i] /= transit_models
 
         if plot :
@@ -734,7 +730,7 @@ def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, 
             plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, plot_prev_model=False)
         plot_all_transits(times, fluxes, fluxerrs, posterior, plot_prev_model=plot_prev_model, bindata=True)
         #plot model
-        #plot_priors_model(times, fluxes, fluxerrs, posterior, batman=True)
+        #plot_priors_model(times, fluxes, fluxerrs, posterior)
         
         #- make a pairs plot from MCMC output:
         #flat_samples = sampler.get_chain(discard=burnin,flat=True)
@@ -925,7 +921,7 @@ def lnlikelihood(theta, labels, calib_params, flare_params, planet_params, times
     flare_params = updateParams(flare_params, theta, labels)
     calib_params = updateParams(calib_params, theta, labels)
 
-    flux_models = calculate_models_withbatman(times, calib_params, flare_params, planet_params)
+    flux_models = calculate_models(times, calib_params, flare_params, planet_params)
 
     sum_of_residuals = 0
 
@@ -994,7 +990,7 @@ def lnlikelihood_tr_rv(theta, labels, calib_params, rvcalib_params, flare_params
     flare_params = updateParams(flare_params, theta, labels)
     calib_params = updateParams(calib_params, theta, labels)
 
-    flux_models = calculate_models_withbatman(tr_times, calib_params, flare_params, planet_params)
+    flux_models = calculate_models(tr_times, calib_params, flare_params, planet_params)
 
     param_likelihood = 0
     for j in range(len(prior_planet_params)) :
@@ -1032,31 +1028,6 @@ def lnlikelihood_tr_rv(theta, labels, calib_params, rvcalib_params, flare_params
     return ln_likelihood
 
 
-def calculate_models(times, calib_params, flare_params, planet_params) :
-
-    n_datasets = len(times)
-    
-    flare_tags = get_flare_tags(flare_params, times)
-
-    flux_models = []
-    
-    for i in range(n_datasets) :
-        
-        transit_models = np.full_like(times[i], 1.0)
-        
-        for j in range(len(planet_params)) :
-            transit_models *= modelslib.transit_model(times[i], planet_params[j], planet_index=j)
-
-        calib = modelslib.calib_model(n_datasets, i, calib_params, times[i])
-        flares = modelslib.flares_model(flare_params, flare_tags, i, times[i])
-
-        flux_model = (calib + flares) * transit_models
-
-        flux_models.append(flux_model)
-
-    return flux_models
-
-
 def calculate_rv_model(time, planets_params, planet_index=0) :
     
     planet_params = planets_params[planet_index]
@@ -1079,7 +1050,7 @@ def calculate_rv_model(time, planets_params, planet_index=0) :
     return vel
 
 
-def calculate_models_withbatman(times, calib_params, flare_params, planet_params) :
+def calculate_models(times, calib_params, flare_params, planet_params) :
     
     n_datasets = len(times)
     
@@ -1104,7 +1075,7 @@ def calculate_models_withbatman(times, calib_params, flare_params, planet_params
     return flux_models
 
 
-def plot_priors_model(times, fluxes, fluxerrs, priors, batman=False) :
+def plot_priors_model(times, fluxes, fluxerrs, priors) :
     
     n_datasets = priors["n_datasets"]
     n_planets = priors["n_planets"]
@@ -1114,10 +1085,7 @@ def plot_priors_model(times, fluxes, fluxerrs, priors, batman=False) :
     calib_params = priors["calib_params"]
     flare_params = priors["flare_params"]
     
-    if batman :
-        flux_models = calculate_models_withbatman(times, calib_params, flare_params, planet_params)
-    else :
-        flux_models = calculate_models(times, calib_params, flare_params, planet_params)
+    flux_models = calculate_models(times, calib_params, flare_params, planet_params)
 
     for i in range(len(times)) :
         plt.errorbar(times[i], fluxes[i], yerr=fluxerrs[i], fmt='ko', alpha=0.3)
@@ -1167,7 +1135,7 @@ def errfunc_batman(theta, labels, calib_params, flare_params, planet_params, tim
     flare_params = updateParams(flare_params, theta, labels)
     calib_params = updateParams(calib_params, theta, labels)
 
-    flux_models = calculate_models_withbatman(times, calib_params, flare_params, planet_params)
+    flux_models = calculate_models(times, calib_params, flare_params, planet_params)
 
     residuals = np.array([])
     for i in range(len(times)) :
@@ -1252,7 +1220,7 @@ def update_flare_priors(flare_priors, flare_params, unc=0.05, prior_type="FIXED"
     return flare_priors
 
 
-def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", flares_unc=0.05, calib_post_type="FIXED", calib_unc=0.05, batman=False, verbose=False, plot=False) :
+def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", flares_unc=0.05, calib_post_type="FIXED", calib_unc=0.05, verbose=False, plot=False) :
 
     posterior = deepcopy(priors)
     
@@ -1270,10 +1238,7 @@ def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", fl
     for i in range(len(theta)) :
         print(labels[i], "=", theta[i])
     
-    if batman :
-        theta, success = optimize.leastsq(errfunc_batman, theta, args=(labels, calib_params, flare_params, planet_params, times, fluxes))
-    else :
-        theta, success = optimize.leastsq(errfunc, theta, args=(labels, calib_params, flare_params, planet_params, times, fluxes))
+    theta, success = optimize.leastsq(errfunc_batman, theta, args=(labels, calib_params, flare_params, planet_params, times, fluxes))
 
     for i in range(len(planet_params)) :
         planet_params[i] = updateParams(planet_params[i], theta, labels)
@@ -1304,10 +1269,9 @@ def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", fl
     posterior["theta_priors"] = theta_priors
 
     if plot :
-        if batman :
-            flux_models = calculate_models_withbatman(times, calib_params, flare_params, planet_params)
-        else :
-            flux_models = calculate_models(times, calib_params, flare_params, planet_params)
+        
+        flux_models = calculate_models(times, calib_params, flare_params, planet_params)
+        
         for i in range(len(times)) :
             plt.errorbar(times[i], fluxes[i], yerr=fluxerrs[i], fmt='ko', alpha=0.3)
             plt.plot(times[i], flux_models[i], 'r-', lw=2)
@@ -1748,7 +1712,7 @@ def fitTransitsAndRVsWithMCMC(tr_times, fluxes, fluxerrs, rv_times, rvs, rverrs,
         t0 = posterior["planet_params"][0]['tc_{0:03d}'.format(0)]
         plot_rv_timeseries(planet_params, rvcalib_params, rv_times, rvs, rverrs, samples=samples, labels=labels, planet_index=0, plot_residuals=True, phasefold=True, plot_bin_data=True, rvlabel=rvlabel, t0=t0)
         #plot model
-        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior, batman=True)
+        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior)
         
         #- make a pairs plot from MCMC output:
         #flat_samples = sampler.get_chain(discard=burnin,flat=True)
@@ -1808,7 +1772,7 @@ def errfunc_transit_rv(theta, labels, calib_params, rvcalib_params, flare_params
     calib_params = updateParams(calib_params, theta, labels)
     rvcalib_params = updateParams(rvcalib_params, theta, labels)
 
-    flux_models = calculate_models_withbatman(tr_times, calib_params, flare_params, planet_params)
+    flux_models = calculate_models(tr_times, calib_params, flare_params, planet_params)
 
     residuals = np.array([])
     for i in range(len(tr_times)) :
@@ -1907,7 +1871,7 @@ def fitTransits_and_RVs_ols(tr_times, fluxes, fluxerrs, rv_times, rvs, rverrs, p
     posterior["theta_priors"] = theta_priors
 
     if plot :
-        flux_models = calculate_models_withbatman(tr_times, calib_params, flare_params, planet_params)
+        flux_models = calculate_models(tr_times, calib_params, flare_params, planet_params)
         for i in range(len(tr_times)) :
             plt.errorbar(tr_times[i], fluxes[i], yerr=fluxerrs[i], fmt='ko', alpha=0.3)
             plt.plot(tr_times[i], flux_models[i], 'r-', lw=2)
@@ -3013,7 +2977,7 @@ def lnlikelihood_tr_rv_gp(theta, labels, calib_params, rvcalib_params, flare_par
     flare_params = updateParams(flare_params, theta, labels)
     calib_params = updateParams(calib_params, theta, labels)
 
-    flux_models = calculate_models_withbatman(tr_times, calib_params, flare_params, planet_params)
+    flux_models = calculate_models(tr_times, calib_params, flare_params, planet_params)
 
     sum_of_residuals = 0
 
@@ -3322,7 +3286,7 @@ def fitTransitsAndRVsWithMCMCAndGPSHO(tr_times, fluxes, fluxerrs, rv_times, rvs,
         t0 = posterior["planet_params"][0]['tc_{0:03d}'.format(0)]
         plot_rv_timeseries(planet_params, rvcalib_params, rv_times, red_rvs, red_rverrs, samples=samples, labels=labels, planet_index=0, plot_residuals=True, phasefold=True, plot_bin_data=True,t0=t0)
         #plot model
-        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior, batman=True)
+        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior)
         
         #- make a pairs plot from MCMC output:
         #flat_samples = sampler.get_chain(discard=burnin,flat=True)
@@ -3556,7 +3520,7 @@ def fitTransitsAndRVsWithMCMCAndGP_old(tr_times, fluxes, fluxerrs, rv_times, rvs
         t0 = posterior["planet_params"][0]['tc_{0:03d}'.format(0)]
         plot_rv_timeseries(planet_params, rvcalib_params, rv_times, red_rvs, red_rverrs, samples=samples, labels=labels, planet_index=0, plot_residuals=True, phasefold=True, plot_bin_data=True,t0=t0)
         #plot model
-        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior, batman=True)
+        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior)
         
         #- make a pairs plot from MCMC output:
         #flat_samples = sampler.get_chain(discard=burnin,flat=True)
@@ -3873,7 +3837,7 @@ def fitTransitsAndRVsWithMCMCAndGP(tr_times, fluxes, fluxerrs, rv_times, rvs, rv
         t0 = posterior["planet_params"][0]['tc_{0:03d}'.format(0)]
         plot_rv_timeseries(planet_params, rvcalib_params, rv_times, red_rvs, red_rverrs, samples=samples, labels=labels, planet_index=0, plot_residuals=True, phasefold=True, plot_bin_data=True, rvlabel=rvlabel,t0=t0)
         #plot model
-        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior, batman=True)
+        #plot_priors_model(tr_times, fluxes, fluxerrs, posterior)
         
         #- make a pairs plot from MCMC output:
         #flat_samples = sampler.get_chain(discard=burnin,flat=True)

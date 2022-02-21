@@ -135,7 +135,7 @@ for i in range(len(tesslc["PLANETS"])) :
     priors = fitlib.read_priors(planet_priors_files, len(times), calib_polyorder=calib_polyorder, n_rvdatasets=len(rvs), verbose=False)
 
     # Fit calibration parameters for initial guess
-    priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal", batman=True)
+    priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal")
 
     # Fit RV calibration parameters for initial guess
     posterior = fitlib.guess_rvcalib(priors, bjds, rvs, prior_type="Normal")
