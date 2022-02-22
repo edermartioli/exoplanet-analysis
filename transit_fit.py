@@ -10,7 +10,7 @@
     
     Simple usage examples:
     
-    Paper: python transit_fit.py --object="HATS-24" -vp
+    python transit_fit.py --object="HATS-24" -vp
     
     """
 
@@ -92,10 +92,8 @@ for planet in tesslc["PLANETS"] :
         # plot light curves and models in priors
         fitlib.plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, priors)
 
-    posterior = priors
-
     # OLS fit involving all priors
-    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="Normal", calib_unc=0.01, verbose=False, plot=False)
+    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, priors, calib_post_type="Normal", calib_unc=0.01, verbose=False, plot=False)
     # OLS fit involving all priors
     posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="FIXED", verbose=False, plot=False)
 
