@@ -25,9 +25,9 @@ import scipy.signal as signal
 
 from copy import deepcopy
 
-import exoplanet as xo
+#import exoplanet as xo
 import corner
-from balrogo import marginals
+#from balrogo import marginals
 import matplotlib
 
 import exoplanetlib
@@ -1351,7 +1351,8 @@ def plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, plot_prev_mode
         axs[0].legend(fontsize=11)
         axs[0].set_ylabel(r"Flux [e-/s]")
 
-        if plot_prev_model :
+        """
+            if plot_prev_model :
             # Previous model
             pt0, pper, pb, pr, pu = 1342.22, 30., 0.5, 0.028, [0.21, 0.]
             prev_orbit = xo.orbits.KeplerianOrbit(period=pper, t0=pt0, b=pb, m_star=0.5, r_star=0.75)
@@ -1359,7 +1360,7 @@ def plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, plot_prev_mode
             prev_transit_model = (xo.LimbDarkLightCurve(pu).get_light_curve(orbit=prev_orbit, r=pr, t=times[i]).eval())
             prev_light_curve = np.array(prev_transit_model[:,0], dtype=float) + 1.0
             axs[1].plot(times[i], prev_light_curve, '--', color='orange', lw=2, zorder=0.9, label="Previous model")
-
+            """
         normflux = fluxes[i]/(calib+flares)
         normfluxerr = fluxerrs[i]/(calib+flares)
         axs[1].errorbar(times[i], normflux, yerr=normfluxerr, fmt='.', alpha=0.5, color='tab:blue', lw=.7, zorder=0, label="TESS reduced data")

@@ -28,7 +28,7 @@ from PyAstronomy.pyasl import foldAt
 import george
 from george import kernels
 import corner
-from balrogo import marginals
+#from balrogo import marginals
 import priorslib
 from copy import deepcopy
 
