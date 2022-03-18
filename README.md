@@ -18,3 +18,10 @@ python transit_rv_fit.py --object="TOI-1759" --rvdata=example/lbl_TOI-1759_GL846
 * Note: the 'object' ID must be identified by SIMBAD.
 
 If you're using this code, please cite [Martioli et al. (2022)](https://ui.adsabs.harvard.edu/abs/2022arXiv220201259M/abstract)
+
+
+## To fit TESS transits globally and then each transit individually to measure TTVs:
+
+```
+python tess_ttv.py --object="TOI-1759" --calib_order=3 --burnin=200 --nsteps=1000 -vpo
+```
