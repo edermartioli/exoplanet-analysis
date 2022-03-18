@@ -37,8 +37,7 @@ import warnings
 
 import gp_lib
 
-
-def plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, priors) :
+def plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, priors, output='') :
     
     # calcualate flare time tags
     flare_tags = get_flare_tags(priors['flare_params'], times)
@@ -123,9 +122,14 @@ def plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, priors) :
         #axs[jcol, i].set_ylim(0.995,1.003)
         axs[jcol, i].set_xlabel(r"TBJD - T$_c$")
 
-    plt.show()
-    plt.clf()
-    plt.close()
+
+    if output != '' :
+        fig.savefig(output, bbox_inches='tight')
+        plt.close(fig)
+    else :
+        plt.show()
+        plt.clf()
+        plt.close()
 
 
 def fit_continuum(wav, spec, function='polynomial', order=3, nit=5, rej_low=2.0,
@@ -466,7 +470,7 @@ def read_priors(planet_priors_files, n_datasets, flare_priorsfile="", calib_prio
     return loc
 
 
-def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, remove_transits=True, plot=False) :
+def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, remove_transits=True, plot=False, planet_index=-1) :
     
     calib_polyorder = priors["calib_polyorder"]
     calib_priors = priors["calib_priors"]
@@ -487,8 +491,12 @@ def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, r
         
         if remove_transits :
             transit_models = np.full_like(times[i], 1.0)
-            for j in range(len(priors["planet_params"])) :
-                transit_models *= modelslib.batman_transit_model(times[i], priors["planet_params"][j], planet_index=j)
+            if planet_index == -1:
+                for j in range(len(priors["planet_params"])) :
+                    transit_models *= modelslib.batman_transit_model(times[i], priors["planet_params"][j], planet_index=j)
+            else :
+                transit_models *= modelslib.batman_transit_model(times[i], priors["planet_params"][planet_index], planet_index=planet_index)
+
             fluxes_copy[i] /= transit_models
 
         if plot :
@@ -603,7 +611,7 @@ def guess_rvcalib(priors, bjds, rvs, prior_type="FIXED", plot=False) :
     return priors
 
 
-def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, niter=100, burnin=20, verbose=False, plot=False, plot_prev_model=False, plot_individual_transits=False, samples_filename="default_samples.h5", appendsamples=False) :
+def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, niter=100, burnin=20, verbose=False, plot=False, plot_prev_model=False, plot_individual_transits=False, samples_filename="default_samples.h5", transitsplot_output="", pairsplot_output="", appendsamples=False) :
     
     posterior = deepcopy(priors)
     
@@ -690,6 +698,7 @@ def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, 
     if verbose:
         print("Obtaining best fit planet parameters from pdfs ...")
     planet_params, planet_theta_fit, planet_theta_labels = [], [], []
+    posterior["planet_posterior_files"] = []
     for i in range(posterior["n_planets"]) :
         pl_params, pl_theta_fit, pl_theta_labels, pl_theta_err = best_fit_params(posterior["planet_params"][i], labels, samples)
         # update flare parameters in output posterior
@@ -707,6 +716,7 @@ def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, 
             print("----------------")
 
         planet_posterior = posterior["planet_priors_files"][i].replace(".pars", "_posterior.pars")
+        posterior["planet_posterior_files"].append(planet_posterior)
         if verbose:
             print("Output PLANET {0} posterior: ".format(i), planet_posterior)
                 
@@ -728,15 +738,17 @@ def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, 
     if plot :
         if plot_individual_transits :
             plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, plot_prev_model=False)
-        plot_all_transits(times, fluxes, fluxerrs, posterior, plot_prev_model=plot_prev_model, bindata=True)
+
+        plot_all_transits(times, fluxes, fluxerrs, posterior, plot_prev_model=plot_prev_model, bindata=True, output=transitsplot_output)
         #plot model
         #plot_priors_model(times, fluxes, fluxerrs, posterior)
         
         #- make a pairs plot from MCMC output:
         #flat_samples = sampler.get_chain(discard=burnin,flat=True)
-        pairs_plot_emcee(samples, labels, calib_params, planet_params[0], output='pairsplot.png', addlabels=True)
+        pairs_plot_emcee(samples, labels, calib_params, planet_params[0], output=pairsplot_output, addlabels=True)
 
     return posterior
+    
 
 def pairs_plot_emcee(samples, labels, calib_params, planet_params, output='', addlabels=True, rvcalib_params={}) :
     truths=[]
@@ -798,11 +810,11 @@ def pairs_plot_emcee(samples, labels, calib_params, planet_params, output='', ad
         plt.setp(ax.get_yticklabels(), ha="right", rotation=60)
         ax.tick_params(axis='both', labelsize=16)
 
-    plt.show()
-
     if output != '' :
         fig.savefig(output, bbox_inches='tight')
         plt.close(fig)
+    else :
+        plt.show()
 
 
 #- Derive best-fit params and their 1-sigm a error bars
@@ -1104,11 +1116,11 @@ def pairs_plot(samples, output='') :
 
     fig = corner.corner(samples, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84])
 
-    plt.show()
     if output != '' :
         fig.savefig(output)
         plt.close(fig)
-
+    else :
+        plt.show()
 
 def errfunc(theta, labels, calib_params, flare_params, planet_params, times, fluxes) :
     
@@ -1234,9 +1246,10 @@ def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", fl
     
     theta, labels, theta_priors = posterior["theta"], posterior["labels"], posterior["theta_priors"]
     
-    print("Free parameters before OLS fit:")
-    for i in range(len(theta)) :
-        print(labels[i], "=", theta[i])
+    if verbose :
+        print("Free parameters before OLS fit:")
+        for i in range(len(theta)) :
+            print(labels[i], "=", theta[i])
     
     theta, success = optimize.leastsq(errfunc_batman, theta, args=(labels, calib_params, flare_params, planet_params, times, fluxes))
 
@@ -1245,9 +1258,10 @@ def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", fl
     flare_params = updateParams(flare_params, theta, labels)
     calib_params = updateParams(calib_params, theta, labels)
 
-    print("Free parameters after OLS fit:")
-    for i in range(len(theta)) :
-        print(labels[i], "=", theta[i])
+    if verbose :
+        print("Free parameters after OLS fit:")
+        for i in range(len(theta)) :
+            print(labels[i], "=", theta[i])
 
     posterior["calib_params"] = calib_params
     posterior["flare_params"] = flare_params
@@ -1269,7 +1283,6 @@ def fitTransits_ols(times, fluxes, fluxerrs, priors, flare_post_type="FIXED", fl
     posterior["theta_priors"] = theta_priors
 
     if plot :
-        
         flux_models = calculate_models(times, calib_params, flare_params, planet_params)
         
         for i in range(len(times)) :
@@ -1319,7 +1332,7 @@ def reduce_lightcurves(times, fluxes, fluxerrs, calib_params, flare_params, remo
     return  outtime, outflux, outfluxerr
 
 
-def plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, plot_prev_model=False) :
+def plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, output='', plot_prev_model=False) :
     font = {'size': 24}
     matplotlib.rc('font', **font)
     
@@ -1378,10 +1391,14 @@ def plot_posterior_multimodel(times, fluxes, fluxerrs, posterior, plot_prev_mode
         axs[1].set_xlabel(r"Time [BTJD]")
         axs[1].set_ylabel(r"Relative flux")
         
-        plt.show()
+        if output != '' :
+            fig.savefig(output, bbox_inches='tight')
+            plt.close(fig)
+        else :
+            plt.show()
 
 
-def plot_all_transits(times, fluxes, fluxerrs, posterior, plot_prev_model=False, bindata=False, binsize=0.01) :
+def plot_all_transits(times, fluxes, fluxerrs, posterior, plot_prev_model=False, bindata=False, binsize=0.01, output='') :
     font = {'size': 24}
     matplotlib.rc('font', **font)
     
@@ -1460,7 +1477,12 @@ def plot_all_transits(times, fluxes, fluxerrs, posterior, plot_prev_model=False,
     plt.legend(fontsize=20)
     plt.xlabel(r"BTJD - T$_c$")
     plt.ylabel(r"Relative flux")
-    plt.show()
+    
+    if output != '' :
+        plt.savefig(output, bbox_inches='tight')
+        plt.clf()
+    else :
+        plt.show()
 
 
 def odd_ratio_mean(value, err, odd_ratio = 1e-4, nmax = 10):
