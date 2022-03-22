@@ -3,7 +3,7 @@ Toolkit to perform the analysis of photometry and radial velocity data for the d
 
 ### Dependencies:
 ```
-pip install emcee uncertainties PyAstronomy george batman-package corner
+pip install emcee uncertainties PyAstronomy george batman-package corner astroquery
 ```
 
 For a quick start try to run one of the main codes below:
