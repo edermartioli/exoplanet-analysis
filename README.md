@@ -1,9 +1,10 @@
 # Exoplanet-analysis
 Toolkit to perform the analysis of photometry and radial velocity data for the detection and characterization of exoplanets.
 
-### Dependencies
+### Dependencies:
+```
 pip install emcee uncertainties PyAstronomy george batman-package
-
+```
 
 For a quick start try to run one of the two main codes below:
 
