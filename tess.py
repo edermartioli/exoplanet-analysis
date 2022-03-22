@@ -290,14 +290,20 @@ def get_claret_ld_coeffs(teff, logg=5.0, zsun=0, method="LSM") :
     return a,b
 
 
-def save_planet_prior(output, teff, ms, rs, tc, per, a, rp, inc, u0, u1, ecc=0, w=90, k=0., hasrvdata=False, circular_orbit=True, planet_index=0) :
+def save_planet_prior(output, teff, ms, rs, tc, per, a, rp, inc, u0, u1, ecc=0, w=90, k=0., hasrvdata=False, circular_orbit=True, planet_index=0, append=True, all_parameters_fixed=False) :
         
-    outfile = open(output,"w+")
-    outfile.write("# Parameter_ID\tPrior_Type\tValues\n")
-    outfile.write("teff_{:03d}\tFIXED\t{:.0f}\n".format(planet_index,teff))
-    outfile.write("ms_{:03d}\tFIXED\t{:.3f}\n".format(planet_index,ms))
-    outfile.write("rs_{:03d}\tFIXED\t{:.3f}\n".format(planet_index,rs))
-    if hasrvdata :
+    if append :
+        outfile = open(output,"a+")
+    else :
+        outfile = open(output,"w+")
+        
+    if planet_index==0 or not append :
+        outfile.write("# Parameter_ID\tPrior_Type\tValues\n")
+        outfile.write("teff_{:03d}\tFIXED\t{:.0f}\n".format(planet_index,teff))
+        outfile.write("ms_{:03d}\tFIXED\t{:.3f}\n".format(planet_index,ms))
+        outfile.write("rs_{:03d}\tFIXED\t{:.3f}\n".format(planet_index,rs))
+        
+    if hasrvdata and not all_parameters_fixed :
         outfile.write("k_{:03d}\tUniform\t-100,100.,{:.3f}\n".format(planet_index,k))
     else :
         outfile.write("k_{:03d}\tFIXED\t{:.3f}\n".format(planet_index,k))
@@ -305,19 +311,30 @@ def save_planet_prior(output, teff, ms, rs, tc, per, a, rp, inc, u0, u1, ecc=0, 
     outfile.write("rvsys_{:03d}\tFIXED\t0.\n".format(planet_index))
     outfile.write("trend_{:03d}\tFIXED\t0.\n".format(planet_index))
     
-    outfile.write("tc_{:03d}\tUniform\t{:.8f},{:.8f},{:.8f}\n".format(planet_index,tc-0.1*per,tc+0.1*per,tc))
-    outfile.write("per_{:03d}\tUniform\t{:.8f},{:.8f},{:.8f}\n".format(planet_index,per*0.8,per*1.2,per))
-    outfile.write("a_{:03d}\tUniform\t{:.2f},{:.2f},{:.2f}\n".format(planet_index,a*0.8,a*1.2,a))
-    outfile.write("rp_{:03d}\tUniform\t{:.5f},{:.5f},{:.5f}\n".format(planet_index,rp*0.8,rp*1.2,rp))
-    outfile.write("inc_{:03d}\tUniform\t{:.2f},90,{:.2f}\n".format(planet_index,inc*0.8,inc))
-    if circular_orbit :
+    if all_parameters_fixed :
+        outfile.write("tc_{:03d}\tFIXED\t{:.8f}\n".format(planet_index,tc))
+        outfile.write("per_{:03d}\tFIXED\t{:.8f}\n".format(planet_index,per))
+        outfile.write("a_{:03d}\tFIXED\t{:.2f}\n".format(planet_index,a))
+        outfile.write("rp_{:03d}\tFIXED\t{:.5f}\n".format(planet_index,rp))
+        outfile.write("inc_{:03d}\tFIXED\t{:.2f}\n".format(planet_index,inc))
+        outfile.write("u0_{:03d}\tFIXED\t{:.4f}\n".format(planet_index,u0))
+        outfile.write("u1_{:03d}\tFIXED\t{:.4f}\n".format(planet_index,u1))
+    else :
+        outfile.write("tc_{:03d}\tUniform\t{:.8f},{:.8f},{:.8f}\n".format(planet_index,tc-0.1*per,tc+0.1*per,tc))
+        outfile.write("per_{:03d}\tUniform\t{:.8f},{:.8f},{:.8f}\n".format(planet_index,per*0.8,per*1.2,per))
+        outfile.write("a_{:03d}\tUniform\t{:.2f},{:.2f},{:.2f}\n".format(planet_index,a*0.8,a*1.2,a))
+        outfile.write("rp_{:03d}\tUniform\t{:.5f},{:.5f},{:.5f}\n".format(planet_index,rp*0.8,rp*1.2,rp))
+        outfile.write("inc_{:03d}\tUniform\t{:.2f},90,{:.2f}\n".format(planet_index,inc*0.8,inc))
+    
+        outfile.write("u0_{:03d}\tUniform\t0.,3.,{:.4f}\n".format(planet_index,u0))
+        outfile.write("u1_{:03d}\tUniform\t0.,3.,{:.4f}\n".format(planet_index,u1))
+    
+    if circular_orbit or all_parameters_fixed :
         outfile.write("ecc_{:03d}\tFIXED\t0.\n".format(planet_index))
         outfile.write("w_{:03d}\tFIXED\t90.\n".format(planet_index))
     else :
         outfile.write("ecc_{:03d}\tUniform\t0,1,{:.5f}\n".format(planet_index,ecc))
         outfile.write("w_{:03d}\tUniform\t0.,360.,{:.3f}\n".format(planet_index,w))
-    outfile.write("u0_{:03d}\tUniform\t0.,3.,{:.4f}\n".format(planet_index,u0))
-    outfile.write("u1_{:03d}\tUniform\t0.,3.,{:.4f}\n".format(planet_index,u1))
 
     outfile.close()
 
@@ -400,7 +417,7 @@ def select_transit_windows(selected_dvt_files, tcs, twindow, tdur_days, tess_cad
     return valid_tcs, times, fluxes, fluxerrs
     
     
-def load_dvt_files(object, priors_dir=".", transit_window_size = 5, save_priors=True, hasrvdata=False, force_circular_orbit=True, plot=False, verbose=False) :
+def load_dvt_files(object, priors_dir=".", transit_window_size = 5, save_priors=True, planet_to_analyze=-1, hasrvdata=False, force_circular_orbit=True, plot=False, verbose=False) :
     
     # first check if database exists
     if os.path.exists(objects_db) :
@@ -501,6 +518,7 @@ def load_dvt_files(object, priors_dir=".", transit_window_size = 5, save_priors=
     nTCEs = bhdr['NEXTEND'] - 2
         
     loc["NPLANETS"] = nTCEs
+    
     # save number of transiting objects into db
     object_data[object]["NPLANETS"] = nTCEs
         
@@ -510,6 +528,9 @@ def load_dvt_files(object, priors_dir=".", transit_window_size = 5, save_priors=
     loc["PLANETS"] = []
     object_data[object]["PLANETS"] = []
 
+    output_prior_file = priors_dir + "/{}.pars".format(object_name)
+    loc["PRIOR_FILE"] = output_prior_file
+                
     # loop over each planet extension to create the priors files and
     # to select the transit ranges based on the planet parameters in the header
     for ext in range(1, nTCEs + 1) :
@@ -551,15 +572,27 @@ def load_dvt_files(object, priors_dir=".", transit_window_size = 5, save_priors=
             recenter_tcs = True
         
         # create priors files:
-        output = priors_dir + "/{}_{:03}.pars".format(object_name,ext-1)
-        pl_loc["prior_file"] = output
+        pl_output = priors_dir + "/{}_{:03}.pars".format(object_name,ext-1)
+        pl_loc["prior_file"] = pl_output
 
         if save_priors :
             if verbose :
-                print("Saving priors file:",output)
-            save_planet_prior(output, teff, mstar, rstar, tepoch, tperiod, drratio, radratio, inclin, u0, u1, ecc=ecc, w=omega, hasrvdata=hasrvdata, circular_orbit=force_circular_orbit, planet_index=ext-1)
+                print("Saving priors file:",pl_output)
+                
+            all_parameters_fixed = True
+            if ext-1 == planet_to_analyze or planet_to_analyze == -1 :
+                all_parameters_fixed = False
+                
+            append = False
+            if ext > 1 :
+                append = True
+    
+            # Save priors for each individual planet
+            save_planet_prior(pl_output, teff, mstar, rstar, tepoch, tperiod, drratio, radratio, inclin, u0, u1, ecc=ecc, w=omega, hasrvdata=hasrvdata, circular_orbit=force_circular_orbit, planet_index=0, append=False, all_parameters_fixed=False)
+            # save priors for all planets into one file
+            save_planet_prior(output_prior_file, teff, mstar, rstar, tepoch, tperiod, drratio, radratio, inclin, u0, u1, ecc=ecc, w=omega, hasrvdata=hasrvdata, circular_orbit=force_circular_orbit, planet_index=ext-1, append=append, all_parameters_fixed=all_parameters_fixed)
             
-        object_data[object][pl_name]["planet_priors"] = output
+        object_data[object][pl_name]["planet_priors"] = pl_output
         object_data[object][pl_name]["hasrvdata"] = hasrvdata
         object_data[object][pl_name]["force_circular_orbit"] = force_circular_orbit
 
@@ -596,6 +629,7 @@ def load_dvt_files(object, priors_dir=".", transit_window_size = 5, save_priors=
         pl_loc["fluxerrs"] = fluxerrs
 
         loc["PLANETS"].append(pl_loc)
+
 
     time = np.array([])
     relflux, fluxerr = np.array([]), np.array([])

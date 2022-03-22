@@ -41,25 +41,31 @@ ExoplanetAnalysis_dir = os.path.dirname(__file__)
 priors_dir = os.path.join(ExoplanetAnalysis_dir, 'priors/')
 ttvs_dir = os.path.join(ExoplanetAnalysis_dir, 'ttvs/')
 
-def global_transit_fit (tesslc, calib_polyorder=1, walkers=32, niter=500, burnin=100, plot=False, save_plots=False) :
+def global_transit_fit (tesslc, calib_polyorder=1, walkers=32, niter=500, burnin=100, planet_to_analyze=-1, plot=False, save_plots=False) :
 
     planets_posteriors = []
 
     for planet_index in range(len(tesslc["PLANETS"])) :
+
+        if planet_to_analyze >= 0 :
+            if planet_index != planet_to_analyze :
+                continue
 
         planet = tesslc["PLANETS"][planet_index]
         
         # select data within certain ranges
         times, fluxes, fluxerrs = planet["times"], planet["fluxes"], planet["fluxerrs"]
 
+        # To do: remove transits from other planets
+
         #Load priors information:
         planet_priors_files = sorted(glob.glob(planet["prior_file"]))
-
+        
         # read priors from input files
         priors = fitlib.read_priors(planet_priors_files, len(times), calib_polyorder=calib_polyorder, verbose=False)
 
         # Fit calibration parameters for initial guess
-        priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal", planet_index=planet_index)
+        priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal", multiplanetmodel=False, planet_index=0)
 
         #if plot :
         # plot light curves and models in priors
@@ -91,7 +97,7 @@ def global_transit_fit (tesslc, calib_polyorder=1, walkers=32, niter=500, burnin
 
         posterior = fitlib.fitTransitsWithMCMC(times, fluxes, fluxerrs, posterior, amp=1e-5, nwalkers=walkers, niter=niter, burnin=burnin, verbose=True, plot=True, samples_filename=samples_filename, appendsamples=False, plot_individual_transits=False, transitsplot_output=transitsplot_filename, pairsplot_output=pairsplot_filename)
 
-        planets_posteriors.append(posterior["planet_posterior_files"][planet_index])
+        planets_posteriors.append(posterior["planet_posterior_files"][0])
 
     return planets_posteriors
  
@@ -151,7 +157,7 @@ def caculate_tcs(times, fluxes, per, per_err, t0, t0_err) :
     return tcs, tcerrs, epochs
 
 
-def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_output=False, verbose=False, plot=False) :
+def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, planet_to_analyze=-1, save_output=False, verbose=False, plot=False) :
 
     # Download TESS DVT products and return a list of input data files
     dvt_filenames = tess.retrieve_tess_data_files(object, products_wanted_keys = ["DVT"], verbose=verbose)
@@ -160,14 +166,19 @@ def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_
         print("Loading TESS lightcurves ...")
     
     # Load TESS data
-    tesslc = tess.load_dvt_files(object, priors_dir=priors_dir, save_priors=True, plot=plot, verbose=verbose)
+    tesslc = tess.load_dvt_files(object, priors_dir=priors_dir, save_priors=True, planet_to_analyze=planet_to_analyze, plot=plot, verbose=verbose)
 
     if verbose:
         print("Performing global fit to all transits observed by TESS ...")
         
-    planets_posteriors = global_transit_fit(tesslc, calib_polyorder=calib_order, walkers=walkers, niter=nsteps, burnin=burnin, plot=plot, save_plots=True)
+    planets_posteriors = global_transit_fit(tesslc, calib_polyorder=calib_order, walkers=walkers, niter=nsteps, burnin=burnin, planet_to_analyze=planet_to_analyze, plot=plot, save_plots=True)
 
-    for planet_index in range(len(planets_posteriors)) :
+
+    for planet_index in range(len(tesslc["PLANETS"])) :
+
+        if planet_to_analyze >= 0 :
+            if planet_index != planet_to_analyze :
+                continue
 
         output_str = ''
     
@@ -175,13 +186,20 @@ def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_
         # select data within certain ranges
         times, fluxes, fluxerrs = planet["times"], planet["fluxes"], planet["fluxerrs"]
 
-        tc_key = "{0}_{1:03d}".format('tc', planet_index)
+        tc_key = "{0}_{1:03d}".format('tc', 0)
+        per_key = "{0}_{1:03d}".format('per', 0)
+
         tc_error_key = "{0}_err".format(tc_key)
-        per_key = "{0}_{1:03d}".format('per', planet_index)
         per_error_key = "{0}_err".format(per_key)
     
-        global_posterior = priorslib.read_priors(planets_posteriors[planet_index])
-        planet_params = priorslib.read_exoplanet_params(global_posterior, planet_index=planet_index)
+        if planet_to_analyze == -1 :
+            planet_posterior_file = planets_posteriors[planet_index]
+        else :
+            planet_posterior_file = planets_posteriors[0]
+
+        global_posterior = priorslib.read_priors(planet_posterior_file)
+
+        planet_params = priorslib.read_exoplanet_params(global_posterior, planet_index=0)
     
         tcs, tcerrs, epochs = caculate_tcs(times, fluxes, planet_params[per_key], planet_params[per_error_key][1], planet_params[tc_key], planet_params[tc_error_key][1])
 
@@ -191,13 +209,13 @@ def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_
         # loop over each individual transit observed by TESS
         for i in range(len(times)) :
             if verbose:
-                print("Performing individual transit fit to planet {}/{} transit {}/{} (tc={:.8f} BTJD)".format(planet_index+1, len(planets_posteriors), i+1, len(times), tcs[i]))
+                print("Performing individual transit fit to planet {}/{} transit {}/{} (tc={:.8f} BTJD)".format(planet_index+1, len(tesslc["PLANETS"]), i+1, len(times), tcs[i]))
 
             #transitpriorfile = planet["prior_file"].replace(".pars","_{0:05d}_ttvtmp.pars".format(i))
             tmppriorfile = planet["prior_file"].replace(".pars","_ttvtmp.pars")
                 
-            set_priors_from_global_fit(planets_posteriors[planet_index],tmppriorfile, new_tc=tcs[i],planet_index=planet_index, nsig_around_tc=10)
-        
+            set_priors_from_global_fit(planet_posterior_file, tmppriorfile, new_tc=tcs[i], planet_index=0, nsig_around_tc=10)
+
             #Load priors information:
             planet_priors_files = sorted(glob.glob(tmppriorfile))
 
@@ -205,7 +223,7 @@ def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_
             priors = fitlib.read_priors(planet_priors_files, 1, calib_polyorder=calib_order, verbose=False)
 
             # Fit calibration parameters for initial guess
-            priors = fitlib.guess_calib(priors, [times[i]], [fluxes[i]], prior_type="Normal", planet_index=planet_index)
+            priors = fitlib.guess_calib(priors, [times[i]], [fluxes[i]], prior_type="Normal", multiplanetmodel=False, planet_index=0)
         
             # OLS fit involving all priors
             posterior = fitlib.fitTransits_ols([times[i]], [fluxes[i]], [fluxerrs[i]], priors, calib_post_type="FIXED", calib_unc=0.01, verbose=False, plot=False)
@@ -218,8 +236,8 @@ def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_
 
             posterior = fitlib.fitTransitsWithMCMC([times[i]], [fluxes[i]], [fluxerrs[i]], posterior, amp=1e-5, nwalkers=walkers, niter=nsteps, burnin=burnin, verbose=False, plot=False, samples_filename=samples_filename, appendsamples=False, plot_individual_transits=False, transitsplot_output=transitsplot_filename, pairsplot_output=pairsplot_filename)
 
-            results = priorslib.read_priors(posterior["planet_posterior_files"][planet_index])
-            planet_params = priorslib.read_exoplanet_params(results, planet_index=planet_index)
+            results = priorslib.read_priors(posterior["planet_posterior_files"][0])
+            planet_params = priorslib.read_exoplanet_params(results, planet_index=0)
         
             fit_tc = planet_params[tc_key]
             fit_tcerr = planet_params[tc_error_key][1]
@@ -262,10 +280,11 @@ def ttv_pipeline(object, calib_order=1, walkers=32, burnin=30, nsteps=100, save_
 
 parser = OptionParser()
 parser.add_option("-j", "--object", dest="object", help='Object ID',type='string',default="")
+parser.add_option("-a", "--planet_to_analyze", dest="planet_to_analyze", help="Select planet to analize",type='int',default=-1)
 parser.add_option("-c", "--calib_order", dest="calib_order", help='Order of calibration polynomial',type='int',default=1)
-parser.add_option("-w", "--walkers", dest="walkers", help="Number of MCMC walkers",type='int',default=32)
-parser.add_option("-b", "--burnin", dest="burnin", help="Number of MCMC burn-in samples",type='int',default=30)
-parser.add_option("-n", "--nsteps", dest="nsteps", help="Number of MCMC steps",type='int',default=100)
+parser.add_option("-w", "--walkers", dest="walkers", help="Number of MCMC walkers",type='int',default=50)
+parser.add_option("-b", "--burnin", dest="burnin", help="Number of MCMC burn-in samples",type='int',default=100)
+parser.add_option("-n", "--nsteps", dest="nsteps", help="Number of MCMC steps",type='int',default=500)
 parser.add_option("-o", action="store_true", dest="save_output", help="Save output TTV", default=False)
 parser.add_option("-p", action="store_true", dest="plot", help="verbose",default=False)
 parser.add_option("-v", action="store_true", dest="verbose", help="verbose",default=False)
@@ -282,5 +301,5 @@ if options.verbose:
     print('Number of MCMC burn-in samples: ', options.burnin)
     print('Number of MCMC steps: ', options.nsteps)
     
-ttv_pipeline(options.object, calib_order=options.calib_order, walkers=options.walkers, burnin=options.burnin, nsteps=options.nsteps, save_output=options.save_output, verbose=options.verbose, plot=options.plot)
+ttv_pipeline(options.object, calib_order=options.calib_order, walkers=options.walkers, burnin=options.burnin, nsteps=options.nsteps, save_output=options.save_output, planet_to_analyze=options.planet_to_analyze, verbose=options.verbose, plot=options.plot)
 

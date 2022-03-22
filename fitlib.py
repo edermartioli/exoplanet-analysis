@@ -470,7 +470,7 @@ def read_priors(planet_priors_files, n_datasets, flare_priorsfile="", calib_prio
     return loc
 
 
-def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, remove_transits=True, plot=False, planet_index=-1) :
+def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, remove_transits=True, plot=False, multiplanetmodel=False, planet_index=0) :
     
     calib_polyorder = priors["calib_polyorder"]
     calib_priors = priors["calib_priors"]
@@ -491,7 +491,8 @@ def guess_calib(priors, times, fluxes, prior_type="FIXED", remove_flares=True, r
         
         if remove_transits :
             transit_models = np.full_like(times[i], 1.0)
-            if planet_index == -1:
+            
+            if multiplanetmodel :
                 for j in range(len(priors["planet_params"])) :
                     transit_models *= modelslib.batman_transit_model(times[i], priors["planet_params"][j], planet_index=j)
             else :
@@ -612,6 +613,8 @@ def guess_rvcalib(priors, bjds, rvs, prior_type="FIXED", plot=False) :
 
 
 def fitTransitsWithMCMC(times, fluxes, fluxerrs, priors, amp=1e-4, nwalkers=32, niter=100, burnin=20, verbose=False, plot=False, plot_prev_model=False, plot_individual_transits=False, samples_filename="default_samples.h5", transitsplot_output="", pairsplot_output="", appendsamples=False) :
+    
+    warnings.simplefilter('ignore')
     
     posterior = deepcopy(priors)
     
