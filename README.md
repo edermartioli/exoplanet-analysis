@@ -6,7 +6,7 @@ Toolkit to perform the analysis of photometry and radial velocity data for the d
 pip install emcee uncertainties PyAstronomy george batman-package
 ```
 
-For a quick start try to run one of the two main codes below:
+For a quick start try to run one of the main codes below:
 
 ## To fit TESS transits only:
 
