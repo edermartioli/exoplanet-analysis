@@ -33,6 +33,8 @@ from scipy import constants
 from astropy import units as u
 from astropy.modeling.models import BlackBody
 
+import matplotlib.pyplot as plt
+
 def read_planet_prior(planet_priors_file, verbose=False) :
 
     if verbose:
@@ -333,14 +335,15 @@ print("Density [g/cm^3] = ",planet_density(params, params['k']))
 print("Impact parameter [Rs] = ",impact_parameter(params))
 print("Fit impact parameter [Rs] = ",impact_parameter(params,fitvalue=True))
 
-#masses = [0.01,0.02,0.03,0.04,0.0428-0.037,0.0428+0.037,0.05,0.06,0.07,0.08,0.09,0.1]
+#masses = [0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1]
 #masses = [0.04616-0.0409, 7.0*5.972e24/1.898e27,  0.04616, 0.04616+0.0409]
-masses = [0.0428-0.036, 7.0*5.972e24/1.898e27, 0.0428, 0.0428+0.036]
+#masses = [0.0428-0.036, 7.0*5.972e24/1.898e27, 0.0428, 0.0428+0.036]
 
+
+masses = np.array([0.001,0.002,0.003,0.004,0.005,0.006,0.007,0.008,0.009,0.01,0.02,0.03])
 for mp in masses :
     k = rv_semi_amplitude(params, mp)[0]
     rho = planet_density(params, k)
     mpnep = mp * 1.898e27 / 1.024e26
     mpear = mp * 1.898e27 / 5.972e24
     print("Mp={0:.3f}Mjup, {1:.2f}Mnep, {2:.1f}Mearth -> K = {3} m/s  density = {4} g/cm^3".format(mp,mpnep,mpear,k,rho))
-

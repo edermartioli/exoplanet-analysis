@@ -74,10 +74,11 @@ def plot_folded(phase, flux, model, ext, period, sector) :
     
     plt.plot(phase[isort], flux[isort],'.', ms = .5, alpha=0.5, zorder=1)
     plt.plot(phase[isort], model[isort], '-', lw = 2, label = "TCE {} Sector {}".format(ext,sector), zorder=2)
-    plt.xlabel('Phase (Period = %5.2f days)' % period)
+    plt.xlabel('Phase (Period = %5.2f days)' % period, fontsize=18)
     plt.ylim(1.5 * np.nanpercentile(flux, .5) , 1.4 * np.nanpercentile(flux,99.5))
     plt.legend(loc = "lower right")
-    
+    plt.ylabel("rel. flux", fontsize=18)
+
     
 def plot_folded_light_curve (dvt_filenames) :
 
@@ -98,7 +99,7 @@ def plot_folded_light_curve (dvt_filenames) :
             
             head = fits.getheader(dvt_filename, ext)
             period = head['TPERIOD']
-            phase = data['PHASE']
+            phase = data['PHASE'] / (np.max(data['PHASE']) - np.min(data['PHASE']))
             #flux = data['LC_INIT']
             flux = data['LC_DETREND']
             fluxerr = data['LC_INIT_ERR']
@@ -106,7 +107,6 @@ def plot_folded_light_curve (dvt_filenames) :
             plt.subplot(nTCEs, 1, ext)
             plot_folded(phase, flux, model, ext, period, sector)
 
-    plt.ylabel("rel flux")
     #plt.legend(fontsize=18)
     plt.show()
 
