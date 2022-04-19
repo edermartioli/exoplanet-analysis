@@ -32,6 +32,48 @@ import corner
 import priorslib
 from copy import deepcopy
 
+
+#- Update params from theta values
+def updateParams(params, theta, labels) :
+    for key in params.keys() :
+        for j in range(len(theta)) :
+            if key == labels[j]:
+                params[key] = theta[j]
+                break
+    return params
+
+#- Derive best-fit params and their 1-sigm a error bars
+def best_fit_params(params, free_param_labels, samples, use_mean=False, verbose = False) :
+
+    theta, theta_labels, theta_err = [], [], []
+    
+    if use_mean :
+        npsamples = np.array(samples)
+        values = []
+        for i in range(len(samples[0])) :
+            mean = np.mean(npsamples[:,i])
+            err = np.std(npsamples[:,i])
+            values.append([mean,err,err])
+    else :
+        func = lambda v: (v[1], v[2]-v[1], v[1]-v[0])
+        percents = np.percentile(samples, [16, 50, 84], axis=0)
+        seq = list(zip(*percents))
+        values = list(map(func, seq))
+
+    for i in range(len(values)) :
+        if free_param_labels[i] in params.keys() :
+            theta.append(values[i][0])
+            theta_err.append((values[i][1],values[i][2]))
+            theta_labels.append(free_param_labels[i])
+            
+            if verbose :
+                print(free_param_labels[i], "=", values[i][0], "+", values[i][1],"-", values[i][2])
+
+    params = updateParams(params, theta, theta_labels)
+
+    return params, theta, theta_labels, theta_err
+
+
 #########################
 ###### START GP QP Kernel
 #########################
@@ -82,7 +124,7 @@ def set_theta_priors(params, priortypes, values) :
     return  labels, theta, theta_priors
 
 
-def set_star_rotation_priors(gp, period_lim=(1,500), aplitude_lim=(0,1e10), decaytime_lim=(10,300), smoothfactor_lim=(0.1,1.0)) :
+def set_star_rotation_priors(gp, period_lim=(1,500), amplitude_lim=(0,1e10), decaytime_lim=(10,300), smoothfactor_lim=(0.1,1.0)) :
 
     params = get_star_rotation_gp_params(gp)
     
@@ -96,7 +138,7 @@ def set_star_rotation_priors(gp, period_lim=(1,500), aplitude_lim=(0,1e10), deca
     values["white_noise"] = (params["white_noise"],np.abs(params["white_noise"])*0.5)
 
     priortypes["amplitude"] = 'Uniform'
-    values["amplitude"] = aplitude_lim
+    values["amplitude"] = amplitude_lim
     
     if "kernel:k1:k2:metric:log_M_0_0" in gp.get_parameter_names() :
         priortypes["decaytime"] = 'Uniform'
@@ -164,7 +206,7 @@ def gprotlnprob(theta, gp, x, y, yerr, params, labels, theta_priors) :
 def star_rotation_gp(t, y, yerr,
                      run_optimization=True,
                      period=10., period_lim=(1,500), fix_period=False,
-                     amplitude=1.0, aplitude_lim=(0,1e10), fix_amplitude=False,
+                     amplitude=1.0, amplitude_lim=(0,1e10), fix_amplitude=False,
                      decaytime=70, decaytime_lim=(10,300), fix_decaytime=False,
                      smoothfactor=0.5, smoothfactor_lim=(0.1,1.0), fix_smoothfactor=False,
                      fit_mean=False, fit_white_noise=False,
@@ -179,11 +221,11 @@ def star_rotation_gp(t, y, yerr,
                      x_label="time", y_label="y", output_pairsplot="",
                      run_mcmc=False, amp=1e-4, nwalkers=32, niter=500, burnin=100,
                      best_fit_from_mode = True, plot_distributions=False,
-                     plot=False, verbose=False) :
+                     output="", plot=False, verbose=False) :
 
     # define star rotation kernel:
     # Eq. 2 of Angus et al. 2017
-    #k1 = kernels.ConstantKernel(log_constant=np.log(amplitude**2), bounds=dict(log_constant=(np.log(aplitude_lim[0]**2),np.log(aplitude_lim[1]**2))))
+    #k1 = kernels.ConstantKernel(log_constant=np.log(amplitude**2), bounds=dict(log_constant=(np.log(amplitude_lim[0]**2),np.log(amplitude_lim[1]**2))))
     k1 = kernels.ConstantKernel(log_constant=np.log(amplitude**2))
     
     #k2 = kernels.ExpSquaredKernel(metric=np.log(decaytime**2), metric_bounds=[(np.log(decaytime_lim[0]**2),np.log(decaytime_lim[1]**2))])
@@ -221,7 +263,9 @@ def star_rotation_gp(t, y, yerr,
     gp.compute(t, yerr)  # You always need to call compute once.
     if verbose :
         print("Initial log likelihood: {0}".format(gp.log_likelihood(y)))
-        print("parameter_dict:\n{0}\n".format(gp.get_parameter_dict()))
+        #gpiniparam = gp.get_parameter_dict()
+        #for key in gpiniparam.keys() :
+        #    print("{} = {}\n".format(key,gpiniparam[key]))
     
     initial_params = gp.get_parameter_vector()
     bounds = gp.get_parameter_bounds()
@@ -232,7 +276,7 @@ def star_rotation_gp(t, y, yerr,
 
         # print the value of the optimised parameters:
         if verbose :
-            print("Fit parameters: {0}".format(soln.x))
+            #print("Fit parameters: {0}".format(soln.x))
             print("Final log likelihood: {0}".format(gp.log_likelihood(y)))
     
         # pass the parameters to the kernel:
@@ -243,7 +287,8 @@ def star_rotation_gp(t, y, yerr,
         if verbose :
             print("Fit parameters:")
             for key in params :
-                print(key,"=",params[key])
+                if ("_err" not in key) and ("_pdf" not in key) :
+                    print(key,"=",params[key])
 
     if plot :
         x = np.linspace(t[0], t[-1], 10000)
@@ -251,12 +296,14 @@ def star_rotation_gp(t, y, yerr,
         pred_std = np.sqrt(pred_var)
 
         color = "#ff7f0e"
-        plt.errorbar(t, y, yerr=yerr, fmt=".k", alpha=0.5, capsize=0)
+        plt.errorbar(t, y, yerr=yerr, fmt=".", color='k', alpha=0.5, capsize=0)
         plt.plot(x, pred_mean, color=color)
         plt.fill_between(x, pred_mean+pred_std, pred_mean-pred_std, color=color, alpha=0.3,
                  edgecolor="none")
         plt.xlabel(x_label, fontsize=15)
         plt.ylabel(y_label, fontsize=15)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
         plt.show()
 
     if fix_mean :
@@ -274,7 +321,7 @@ def star_rotation_gp(t, y, yerr,
 
     if run_mcmc :
 
-        params, priortypes, priorvalues = set_star_rotation_priors(gp, period_lim=period_lim, aplitude_lim=aplitude_lim, decaytime_lim=decaytime_lim, smoothfactor_lim=smoothfactor_lim)
+        params, priortypes, priorvalues = set_star_rotation_priors(gp, period_lim=period_lim, amplitude_lim=amplitude_lim, decaytime_lim=decaytime_lim, smoothfactor_lim=smoothfactor_lim)
 
         labels, theta, theta_priors = set_theta_priors(params, priortypes, priorvalues)
 
@@ -292,68 +339,78 @@ def star_rotation_gp(t, y, yerr,
         pos = [theta + amp * np.random.randn(ndim) for i in range(nwalkers)]
 
         if verbose :
-            print("Running MCMC ... ")
+            print("Running burn-in samples")
+        pos, _, _ = sampler.run_mcmc(pos, burnin, progress=True)
+
+        if verbose :
+            print("Running production chain")
+        sampler.reset()
         sampler.run_mcmc(pos, niter, progress=True)
-        samples = sampler.chain[:, burnin:, :].reshape((-1, ndim)) # burnin : number of first samples to be discard as burn-in
-        
+        samples = sampler.chain.reshape((-1, ndim))
+
         func = lambda v: (v[1], v[2]-v[1], v[1]-v[0])
         percents = np.percentile(samples, [16, 50, 84], axis=0)
         seq = list(zip(*percents))
         values = list(map(func, seq))
 
-        if best_fit_from_mode :
-            max_values = []
-            nbins = 30
+        max_values = []
+        nbins = 30
             
-            for i in range(len(labels)) :
-                hist, bin_edges = np.histogram(samples[:,i], bins=nbins, range=(values[i][0]-5*values[i][1],values[i][0]+5*values[i][2]), density=True)
-                xcen = (bin_edges[:-1] + bin_edges[1:])/2
-                mode = xcen[np.argmax(hist)]
-                max_values.append(mode)
-                
-                if plot_distributions :
-                    nmax = len(samples[:,i])
-                    plt.step(xcen, hist, where='mid')
-                    plt.vlines([values[i][0]], np.min(0), np.max(hist), ls="--", label="median")
-                    plt.vlines([mode], np.min(0), np.max(hist), ls=":", label="mode")
-                    plt.ylabel(r"Probability density",fontsize=18)
-                    plt.xlabel(r"{}".format(labels[i]),fontsize=18)
-                    plt.legend()
-                    plt.show()
-
-                    plt.plot(samples[:,i],label="{}".format(labels[i]), alpha=0.5, lw=0.5)
-                    plt.hlines([], np.min(0), np.max(nmax), ls=":", label="mode",zorder=2)
-                    plt.hlines([values[i][0]], np.min(0), np.max(nmax), ls="-", label="median",zorder=2)
-                    plt.ylabel(r"{}".format(labels[i]),fontsize=18)
-                    plt.xlabel(r"MCMC iteration",fontsize=18)
-                    plt.legend(fontsize=18)
-                    plt.show()
-                    
-            max_values = np.array(max_values)
-            
-        mean_params, max_params, min_params = [], [], []
         for i in range(len(labels)) :
-            if best_fit_from_mode :
-                mean_params.append(max_values[i])
-            else :
-                mean_params.append(values[i][0])
+            hist, bin_edges = np.histogram(samples[:,i], bins=nbins, range=(values[i][0]-5*values[i][1],values[i][0]+5*values[i][2]), density=True)
+            xcen = (bin_edges[:-1] + bin_edges[1:])/2
+            mode = xcen[np.argmax(hist)]
+            max_values.append(mode)
+                
+            if plot_distributions :
+                nmax = len(samples[:,i])
+                plt.step(xcen, hist, where='mid')
+                plt.vlines([values[i][0]], np.min(0), np.max(hist), ls="--", label="median")
+                plt.vlines([mode], np.min(0), np.max(hist), ls=":", label="mode")
+                plt.ylabel(r"Probability density",fontsize=18)
+                plt.xlabel(r"{}".format(labels[i]),fontsize=18)
+                plt.legend()
+                plt.show()
+
+                plt.plot(samples[:,i],label="{}".format(labels[i]), alpha=0.5, lw=0.5)
+                plt.hlines([], np.min(0), np.max(nmax), ls=":", label="mode",zorder=2)
+                plt.hlines([values[i][0]], np.min(0), np.max(nmax), ls="-", label="median",zorder=2)
+                plt.ylabel(r"{}".format(labels[i]),fontsize=18)
+                plt.xlabel(r"MCMC iteration",fontsize=18)
+                plt.legend(fontsize=18)
+                plt.show()
+                    
+        max_values = np.array(max_values)
+        
+        max_params, min_params = [], []
+        median_params, mode_params = [], []
+        
+        for i in range(len(labels)) :
+            mode_params.append(max_values[i])
+            median_params.append(values[i][0])
             max_params.append(values[i][1])
             min_params.append(values[i][2])
         min_params, max_params = np.array(min_params), np.array(max_params)
-        mean_params = np.array(mean_params)
+        median_params = np.array(median_params)
+        mode_params = np.array(mode_params)
         err_params = (min_params + max_params)/2
 
         # Update the kernel gp parameters
-        params = update_params(params, labels, mean_params)
+        if best_fit_from_mode :
+            mean_params = deepcopy(mode_params)
+            params = update_params(params, labels, mode_params)
+        else :
+            mean_params = deepcopy(median_params)
+            params = update_params(params, labels, median_params)
         gp = set_star_rotation_gp_params(gp, params)
         gp.compute(t, yerr)
 
         if verbose :
             for i in range(len(labels)) :
-                mean = mean_params[i]
+                median, mode = median_params[i], mode_params[i]
                 min = min_params[i]
                 max = max_params[i]
-                print("{} = {:.8f} + {:.8f} - {:.8f}".format(labels[i], mean, max, min))
+                print("{} = {:.8f} + {:.8f} - {:.8f}  (mode = {:.8f})".format(labels[i], median, max, min, mode))
 
         if plot :
             cornerlabels, corner_ranges = [], []
@@ -377,9 +434,8 @@ def star_rotation_gp(t, y, yerr,
                     cornerlabels.append(white_noise_label)
                     corner_ranges.append((mean_params[i]-3.5*err_params[i],mean_params[i]+3.5*err_params[i]))
 
-            fig = corner.corner(sampler.flatchain, truths=mean_params, labels=cornerlabels, quantiles=[0.16, 0.5, 0.84],tick_size=14,labelsize=30,tick_rotate=30,label_kwargs=dict(fontsize=18))
+            fig = corner.corner(sampler.flatchain, truths=mean_params, labels=cornerlabels, quantiles=[0.16, 0.5, 0.84],tick_size=14,labelsize=30,tick_rotate=30,label_kwargs=dict(fontsize=18), show_titles=True)
             #marginals.corner(sampler.flatchain, truths=mean_params, labels=cornerlabels, quantiles=[0.16, 0.5, 0.84], tick_size=14, label_size=18, max_n_ticks=4, colormain='tab:blue', truth_color=(1,102/255,102/255),colorhist='tab:blue', colorbackgd=(240/255,240/255,240/255),tick_rotate=30)
-
 
             for ax in fig.get_axes():
                 #ax.tick_params(axis='both', which='major', labelsize=14)
@@ -387,35 +443,17 @@ def star_rotation_gp(t, y, yerr,
                 ax.tick_params(axis='both', labelsize=14)
 
             if output_pairsplot != "":
-                plt.savefig(output_pairsplot,bbox_inches='tight')
+                plt.savefig(output_pairsplot, bbox_inches='tight')
+            plt.xticks(fontsize=16)
+            plt.yticks(fontsize=16)
             plt.show()
-            
-            x = np.linspace(t[0], t[-1], 5000)
 
-            plt.errorbar(t, y, yerr=yerr, fmt=".k", alpha=0.5, capsize=0)
-            pred_mean, pred_var = gp.predict(y, x, return_var=True)
-            pred_std = np.sqrt(pred_var)
-            color = "#ff7f0e"
-            plt.plot(x, pred_mean, color=color, lw=2)
-            plt.fill_between(x, pred_mean+pred_std, pred_mean-pred_std, color=color, alpha=0.3,edgecolor="none")
+            params, theta_fit, theta_labels, theta_err = best_fit_params(params, labels, samples)
 
-            """
-                gp_copy = deepcopy(gp)
-            for i in range(50):
-                # Choose a random walker and step.
-                w = np.random.randint(sampler.chain.shape[0])
-                n = np.random.randint(sampler.chain.shape[1])
-                
-                # Update the kernel gp parameters
-                params = update_params(params, labels, sampler.chain[w, n])
-                gp_copy = set_star_rotation_gp_params(gp_copy, params)
-                gp_copy.compute(t, yerr)
-                pred_sample_mean = gp_copy.predict(y, x, return_cov=False, return_var=False)
-                plt.plot(x, pred_sample_mean, "g", alpha=0.1)
-            """
-            plt.xlabel(x_label, fontsize=15)
-            plt.ylabel(y_label, fontsize=15)
-            plt.show()
+            plot_gp_timeseries(t, y, yerr, gp, params["period"], phase_plot=False, timesampling=0.001, ylabel=y_label, number_of_free_params=len(theta_fit))
+
+        if output != "" :
+            priorslib.save_posterior(output, params, theta_fit, theta_labels, theta_err)
 
     return gp
 
@@ -470,3 +508,61 @@ def set_star_rotation_gp_params(gp, params) :
     
     return gp
 
+def plot_gp_timeseries(bjds, y, yerr, gp, fold_period, phase_plot=True, timesampling=0.001, ylabel=r"Relative flux", number_of_free_params=0) :
+
+    fig, axes = plt.subplots(2, 1, figsize=(7, 5), sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'height_ratios': [2, 1]})
+
+    ti, tf = np.min(bjds), np.max(bjds)
+    time = np.arange(ti, tf, timesampling)
+    
+    pred_mean, pred_var = gp.predict(y, time, return_var=True)
+    pred_std = np.sqrt(pred_var)
+    
+    pred_mean_obs, _ = gp.predict(y, bjds, return_var=True)
+    residuals = y - pred_mean_obs
+
+    
+    # Plot the data
+    color = "#ff7f0e"
+    axes[0].plot(time, pred_mean, "-", color=color, label="GP model")
+    axes[0].fill_between(time, pred_mean+pred_std, pred_mean-pred_std, color=color, alpha=0.3, edgecolor="none")
+    axes[0].errorbar(bjds, y, yerr=yerr, fmt='.', color='k', label='TESS data', alpha=0.5)
+    axes[1].errorbar(bjds, residuals, yerr=yerr, fmt='.', color='k', alpha=0.5)
+    axes[1].set_xlabel("BJD", fontsize=16)
+
+    axes[0].set_ylabel(ylabel, fontsize=16)
+    axes[0].legend(fontsize=16)
+    axes[0].tick_params(axis='x', labelsize=14)
+    axes[0].tick_params(axis='y', labelsize=14)
+
+    sig_res = np.nanstd(residuals)
+    axes[1].set_ylim(-5*sig_res,+5*sig_res)
+    axes[1].set_ylabel(r"Residuals [G]", fontsize=16)
+    axes[1].tick_params(axis='x', labelsize=14)
+    axes[1].tick_params(axis='y', labelsize=14)
+    
+    print("RMS of {} residuals: {:.2f}".format(ylabel, sig_res))
+    n = len(residuals)
+    m = number_of_free_params
+    chi2 = np.sum((residuals/yerr)**2) / (n - m)
+    print("Reduced chi-square (n={}, DOF={}): {:.2f}".format(n,n-m,chi2))
+    
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    plt.show()
+
+    if phase_plot :
+        plt.clf()
+        phases = foldAt(bjds, fold_period, T0=ti)
+        sortIndi = np.argsort(phases)
+        #mphases = foldAt(time, fold_period, T0=ti)
+        #msortIndi = np.argsort(mphases)
+        plt.errorbar(phases[sortIndi], y[sortIndi], yerr=yerr[sortIndi], fmt='.', color='k', label='TESS data')
+        #plt.plot(mphases[msortIndi], pred_mean[msortIndi], "-", color=color, lw=2, alpha=0.01, label="GP model")
+        #plt.fill_between(mphases[msortIndi], pred_mean[msortIndi]+pred_std[msortIndi], pred_mean[msortIndi]-pred_std[msortIndi], color=color, alpha=0.01, edgecolor="none")
+        plt.ylabel(ylabel, fontsize=16)
+        plt.xlabel("phase (P={0:.2f} d)".format(fold_period), fontsize=16)
+        plt.legend(fontsize=16)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.show()

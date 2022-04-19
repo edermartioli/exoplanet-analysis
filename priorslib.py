@@ -523,3 +523,32 @@ def get_gp_theta_from_priors(gp_priors) :
             gp_theta_priors[key] = gp_priors[key]
 
     return gp_theta, gp_labels, gp_theta_priors
+
+
+def read_phot_starrot_gp_params(prior_dict, output_theta_params = False):
+    
+    param_ids = ['mean', 'white_noise', 'amplitude', 'period', 'decaytime', 'smoothfactor']
+    
+    gp_params = {}
+    
+    for i in range(len(param_ids)):
+        if param_ids[i] in prior_dict.keys() :
+            param = prior_dict[param_ids[i]]
+            gp_params[param_ids[i]] = param['object'].value
+    
+    if output_theta_params :
+        theta, labels = [], []
+        for key in gp_params.keys():
+            param = prior_dict[key]
+            if param['type'] != 'FIXED':
+                theta.append(gp_params[key])
+                labels.append(key)
+        return theta, labels
+    else :
+        param_keys = list(gp_params.keys())
+        for key in param_keys:
+            error_key = "{0}_err".format(key)
+            gp_params[error_key] = prior_dict[error_key]
+            pdf_key = "{0}_pdf".format(key)
+            gp_params[pdf_key] = prior_dict[pdf_key]
+        return gp_params

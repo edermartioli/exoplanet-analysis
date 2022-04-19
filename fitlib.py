@@ -802,8 +802,8 @@ def pairs_plot_emcee(samples, labels, calib_params, planet_params, output='', ad
             newlabels.append(lab)
 
     if addlabels :
-        fig = corner.corner(samples, labels = newlabels, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], labelpad=1, truths=truths, labelsize=60, label_kwargs={"fontsize": 30}, show_titles=False)
-        fig.set_size_inches(40, 45)
+        fig = corner.corner(samples, labels = newlabels, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], labelpad=1, truths=truths, labelsize=60, label_kwargs={"fontsize": 30}, show_titles=True)
+        #fig.set_size_inches(40, 45)
         #fig = marginals.corner(samples, labels = newlabels, quantiles=[0.16, 0.5, 0.84], truths=truths)
     else :
         fig = corner.corner(samples, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], labelpad=2.0,truths=truths, labelsize=10, show_titles=False)
@@ -3055,14 +3055,18 @@ def fitTransitsAndRVsWithMCMCAndGP(tr_times, fluxes, fluxerrs, rv_times, rvs, rv
     return posterior
 
 
-def reduce_gp(gp, x, y, yerr, gp_feed) :
+def reduce_gp(gp, x, y, yerr, gp_feed, subtract=True) :
 
     gp.compute(gp_feed["t"], gp_feed["yerr"])
     yout, yerrout = deepcopy(y), deepcopy(yerr)
     for i in range(len(x)) :
         pred_mean, pred_var = gp.predict(gp_feed['y'], x[i], return_var=True)
         pred_std = np.sqrt(pred_var)
-        yout[i] -= pred_mean
+        if subtract :
+            yout[i] -= pred_mean
+        else :
+            yout[i] /= pred_mean
+            yerrout[i] /= pred_mean
         #yerrout[i] = np.sqrt(yerrout[i]*yerrout[i] + pred_std*pred_std)
 
     return yout, yerrout
