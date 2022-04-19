@@ -30,3 +30,11 @@ If you're using this code, please cite [Martioli et al. (2022)](https://ui.adsab
 ```
 python tess_ttv.py --object="TOI-1759" --calib_order=3 --burnin=200 --nsteps=1000 -vpo
 ```
+
+## Calculates lightcurves from FFI TESS data and fit transit to these data
+
+```
+python tess_ffi_lc.py --object="TIC 160390955" --fold_period=4.4199503 --epoch_time=2458730.234903 --output=TOI-3568_tess_lc.fits --mask_threshold=8 -vp
+
+python transit_fit_gp.py --input=TOI-3568_tess_lc.fits --epoch_time=1712.5551018 --fold_period=4.4199503 --transit_duration=2.232 --planet_priors=priors/TOI-3568.pars --calib_order=2 --nsteps=1000 --burnin=300 --gp_priors=priors/TOI-3568_gp_priors_phot.pars -vpmal
+```
