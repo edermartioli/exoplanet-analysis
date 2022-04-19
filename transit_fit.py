@@ -44,6 +44,7 @@ parser.add_option("-n", "--nsteps", dest="nsteps", help="Number of MCMC steps",t
 parser.add_option("-w", "--walkers", dest="walkers", help="Number of MCMC walkers",type='int',default=32)
 parser.add_option("-b", "--burnin", dest="burnin", help="Number of MCMC burn-in samples",type='int',default=300)
 parser.add_option("-s", "--samples_filename", dest="samples_filename", help='MCMC samples filename',type='string',default="")
+parser.add_option("-l", action="store_true", dest="ols_fit", help="Perform OLS fit prior to MCMC", default=False)
 parser.add_option("-e", action="store_true", dest="mode", help="Best fit parameters obtained by the mode instead of median", default=False)
 parser.add_option("-p", action="store_true", dest="plot", help="verbose",default=False)
 parser.add_option("-v", action="store_true", dest="verbose", help="verbose",default=False)
@@ -86,19 +87,20 @@ for planet in tesslc["PLANETS"] :
     priors = fitlib.read_priors(planet_priors_files, len(times), calib_polyorder=calib_polyorder, verbose=False)
 
     # Fit calibration parameters for initial guess
-    priors = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal")
+    posterior = fitlib.guess_calib(priors, times, fluxes, prior_type="Normal")
 
     if options.plot :
         # plot light curves and models in priors
-        fitlib.plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, priors)
-
-    # OLS fit involving all priors
-    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, priors, calib_post_type="Normal", calib_unc=0.01, verbose=False, plot=False)
-    # OLS fit involving all priors
-    posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="FIXED", verbose=False, plot=False)
-
-    if options.plot :
         fitlib.plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, posterior)
+
+    if options.ols_fit :
+        # OLS fit involving all priors
+        posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="Normal", calib_unc=0.01, verbose=False, plot=False)
+        # OLS fit involving all priors
+        posterior = fitlib.fitTransits_ols(times, fluxes, fluxerrs, posterior, calib_post_type="FIXED", verbose=False, plot=False)
+
+        if options.plot :
+            fitlib.plot_mosaic_of_lightcurves(times, fluxes, fluxerrs, posterior)
 
     # Make sure the number of walkers is sufficient, and if not assing a new value
     if options.walkers < 2*len(posterior["theta"]):
