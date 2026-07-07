@@ -43,6 +43,14 @@ dependencies = [
     "h5py",
 ]
 
+[project.optional-dependencies]
+# Extras needed only to download and run the tutorial notebooks:
+#   pip install "exoplanet-analysis-tools[tutorials]"
+tutorials = [
+    "gdown",
+    "jupyter",
+]
+
 [project.urls]
 Homepage = "https://github.com/edermartioli/exoplanet-analysis"
 Repository = "https://github.com/edermartioli/exoplanet-analysis"

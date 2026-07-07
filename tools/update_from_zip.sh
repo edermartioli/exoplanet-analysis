@@ -54,6 +54,9 @@ rsync -a --delete \
   --exclude ".git/" \
   --exclude ".github/workflows/*.local.yml" \
   --exclude "notebooks/outputs/" \
+  --exclude "notebooks/data/TOI-3568/" \
+  --exclude "notebooks/data/WASP-108/" \
+  --exclude "notebooks/data/TOI-1736/" \
   --exclude "**/__pycache__/" \
   --exclude "*.pyc" \
   --exclude ".DS_Store" \

@@ -351,3 +351,42 @@ star. This is now handled coherently, with the sharing made explicit and bandpas
   gained a short section on limb darkening across bandpasses.
 - Backward compatible: priors that still include `ldc_{iii}` behave exactly as before, and
   the equivalence test still passes.
+
+## 14. Version 1.5.0 — GP / stellar-activity tutorial (TOI-1736)
+
+- New `notebooks/07_gaussian_processes_activity.ipynb` exercises the Gaussian-Process and
+  activity-diagnostic tools on the real TOI-1736 data of Martioli et al. (2023, A&A 680, A84):
+  * a quasi-periodic (stellar-rotation) GP fit to the TESS photometry via
+    `gp_lib.star_rotation_gp`, with the predictive model and 1-sigma band plotted per sector
+    (recovers Prot ~ 9.8 d, decay ~ 38 d, amplitude ~ 110 ppm from the three early 2-min
+    sectors binned to 2 hours to keep the O(N^3) GP tractable);
+  * GLS periodograms (`timeseries_lib.periodogram`) of the RVs and of the FWHM, BIS, S-index
+    and H-alpha activity indicators, with the known planet periods marked;
+  * RV-vs-activity Pearson correlations shown both for the raw RVs and for the residuals after
+    removing the two-planet orbit — the residual correlations are weak (e.g. FWHM r goes from
+    -0.58 to +0.08 as the residual rms drops from 161 to 41 m/s), matching the paper's
+    conclusion that the RVs are not strongly activity-contaminated;
+  * the equivalent command-line workflow (`rv_fit_detrend`, `gp_analysis`, `transit_fit`,
+    `transit_rv_fit`) from the user's published analysis.
+- Data added under `notebooks/data/TOI-1736/`: the SOPHIE RVs+indicators rdb, the two-planet
+  priors file, and six TESS light curves (TIC 408618999; a stray sector for a different TIC
+  present in the uploads was excluded).
+- No library code changes; this release adds the notebook, data, and documentation only.
+
+
+## 15. Version 1.6.0 — Lightweight repo: tutorial data downloaded on demand
+
+- Added `datasets.py`: a small helper that downloads the tutorial datasets (TOI-3568,
+  WASP-108, TOI-1736) from a shared Google Drive folder into `notebooks/data/` on demand,
+  using `gdown`. Key functions: `ensure(dataset)` (download only if missing),
+  `download_all()`, `data_dir(dataset)`, `is_present(dataset)`, and `default_data_root()`.
+  `gdown` is imported lazily, so the module (and the package) import fine without it; it is
+  offered via a new `[tutorials]` optional-dependency extra.
+- The tutorial notebooks now begin with `datasets.ensure("<target>")` before setting their
+  `DATA = "data/<target>/"` path, so they still run end to end but no longer require the data
+  to be shipped in the repo.
+- The ~62 MB of `notebooks/data/*/` files are now git-ignored (only `notebooks/data/README.md`
+  is tracked), and the delivered zip excludes them too. The Mac-side `update_from_zip.sh` was
+  updated to exclude the data sub-folders from its `rsync --delete`, so a locally downloaded
+  data copy is never wiped by an update.
+- No library/algorithm changes; this release is packaging and tutorials only.

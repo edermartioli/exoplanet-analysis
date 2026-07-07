@@ -52,6 +52,7 @@ src/exoplanet_analysis/
 ├── tess.py             # TESS/MAST data access, light curves, limb darkening
 ├── systemlib.py        # Planetary system parameters I/O in JSON format
 ├── rmlib.py            # Rossiter-McLaughlin effect model (Ohta et al. 2005)
+├── datasets.py         # On-demand downloader for the tutorial datasets
 ├── data/               # Packaged data (Claret LDC table, TESS objects database)
 └── scripts/            # Command-line tools (see below)
 ```
@@ -230,7 +231,7 @@ The `notebooks/` directory contains a Jupyter tutorial series that introduces th
 whole package. Notebooks 01–04 use a real-life example — the characterization of the
 hot super-Neptune **TOI-3568 b** ([Martioli et al. 2024](https://ui.adsabs.harvard.edu/abs/2024A%26A...691A.312M/abstract)),
 using the actual TESS photometry and MAROON-X + SPIRou radial velocities from the paper —
-and notebooks 05-06 demonstrate the Rossiter-McLaughlin analysis and a full joint fit on real photometry and spectroscopy of WASP-108 b:
+and notebooks 05-06 demonstrate the Rossiter-McLaughlin analysis and a full joint fit on real photometry and spectroscopy of WASP-108 b, while notebook 07 shows the Gaussian-Process and stellar-activity tools on TOI-1736 ([Martioli et al. 2023](https://ui.adsabs.harvard.edu/abs/2023A%26A...680A..84M/abstract)):
 
 1. `01_getting_started.ipynb` — package tour, priors files, system parameters in JSON, and the transit/RV forward models.
 2. `02_tess_photometry_transit_fit.ipynb` — loading TESS light curves, selecting transit windows, and an MCMC transit fit.
@@ -238,11 +239,37 @@ and notebooks 05-06 demonstrate the Rossiter-McLaughlin analysis and a full join
 4. `04_joint_fit_derived_parameters.ipynb` — a joint transit+RV MCMC fit and the derived physical parameters of the planet.
 5. `05_rossiter_mclaughlin.ipynb` — the Rossiter-McLaughlin effect: fitting the sky-projected obliquity and stellar v sin i from RVs taken across a transit.
 6. `06_joint_photometry_rv_rm.ipynb` — a full joint fit of WASP-108 b combining TESS and OPD/LNA 0.6-m photometry, CORALIE orbital RVs, and GHOST Rossiter-McLaughlin RVs in a single MCMC.
+7. `07_gaussian_processes_activity.ipynb` — quasi-periodic Gaussian-Process modelling of stellar rotation in the TESS photometry, plus RV activity-indicator periodograms and correlations, on TOI-1736.
 
 Run notebooks 01–04 in order (notebook 04 uses the system JSON file created in notebook 01);
-notebooks 05-06 are self-contained. The input data is in `notebooks/data/` (~17 MB); each notebook
-writes its products to `notebooks/outputs/`. Every analysis shown in the notebooks is also
+notebooks 05-07 are self-contained. Every analysis shown in the notebooks is also
 available as a command-line tool (see below) — run any of them with `-h` for usage.
+
+### Tutorial data (downloaded on demand)
+
+To keep the repository lightweight, the tutorial datasets (TESS light curves, radial
+velocities, and priors files for TOI-3568, WASP-108 and TOI-1736) are **not stored in the
+repo**. They live in a shared Google Drive folder and are downloaded into `notebooks/data/`
+automatically the first time a notebook needs them, via the `exoplanet_analysis.datasets`
+helper. This requires the `gdown` package:
+
+```bash
+pip install "exoplanet-analysis-tools[tutorials]"   # installs gdown + jupyter
+# or simply:  pip install gdown
+```
+
+Each notebook begins with a `datasets.ensure("<target>")` call that downloads the data only
+if it is not already present locally. You can also fetch everything up front:
+
+```python
+from exoplanet_analysis import datasets
+datasets.download_all()
+```
+
+Or download the folder manually from
+[Google Drive](https://drive.google.com/drive/folders/1jKAL85m5OLMiFhnLyU3xjAWgbJzlTPXS?usp=sharing)
+and place its sub-folders under `notebooks/data/` (see `notebooks/data/README.md`). The
+downloaded files are git-ignored and never committed back to the repository.
 
 The `notebooks/` directory also contains `simulate-exoplanet-rvs.ipynb`, which demonstrates
 simulating radial velocity data for exoplanetary systems.

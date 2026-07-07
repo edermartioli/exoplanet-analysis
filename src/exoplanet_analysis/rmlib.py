@@ -48,6 +48,7 @@ from exoplanet_analysis import exoplanetlib
 # list and by the fit routines to recognize an RM model.
 RM_PLANET_PARAM_IDS = ['lambda', 'vsini', 'omega_rm', 'ldc']
 
+
 def quadratic_to_linear_ld(u0, u1):
     """Convert a quadratic limb-darkening pair to an effective linear coefficient.
 
