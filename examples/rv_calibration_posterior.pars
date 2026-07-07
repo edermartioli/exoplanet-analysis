@@ -1,0 +1,9 @@
+# Parameter_ID	Prior_Type	Values
+rv_d00	Normal	-2.1045796771,1.1479603578
+jitter_d00	FIXED	0.0
+rv_d01	Normal	4.4193542929,0.6296993491
+jitter_d01	FIXED	0.0
+rv_d02	Normal	-2.2240603806,1.1747521034
+jitter_d02	FIXED	0.0
+rv_d03	Normal	4.4748339797,0.6807381842
+jitter_d03	FIXED	0.0

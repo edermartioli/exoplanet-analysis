@@ -1,0 +1,16 @@
+numpy
+scipy
+matplotlib
+astropy
+astroquery
+emcee
+corner
+batman-package
+celerite
+george
+lightkurve
+PyAstronomy
+uncertainties
+mpmath
+scikit-learn
+h5py
