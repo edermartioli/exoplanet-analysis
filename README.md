@@ -24,8 +24,8 @@ Developed by Eder Martioli — Laboratório Nacional de Astrofísica (LNA), Braz
 ### From a local clone
 
 ```bash
-git clone https://github.com/edermartioli/ExoplanetAnalysisTools.git
-cd ExoplanetAnalysisTools
+git clone https://github.com/edermartioli/exoplanet-analysis.git
+cd exoplanet-analysis
 pip install -U .
 ```
 
@@ -253,6 +253,14 @@ Every function in the package carries a numpydoc-style docstring, so `help(funct
 ## Citation
 
 If you use this package in your research, please cite the relevant publications by E. Martioli et al. and acknowledge the use of the *Exoplanet Analysis Tools* package.
+
+## Releasing / updating the distribution
+
+Maintainers: see [`PUBLISHING.md`](PUBLISHING.md) for the step-by-step workflow to
+publish a new version to GitHub from macOS. In short, the version lives only in
+`src/exoplanet_analysis/__init__.py`; pushing a matching tag (e.g. `v1.4.2`)
+triggers a GitHub Actions workflow that builds the package and creates a GitHub
+Release automatically. See [`CHANGELOG.md`](CHANGELOG.md) for the version history.
 
 ## License
 

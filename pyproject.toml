@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "exoplanet-analysis-tools"
-version = "1.4.1"
+dynamic = ["version"]
 description = "Tools for the joint analysis of radial velocity and photometry data to obtain the best-fit parameters of exoplanets"
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
@@ -44,9 +44,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/edermartioli/ExoplanetAnalysisTools"
-Repository = "https://github.com/edermartioli/ExoplanetAnalysisTools"
-Issues = "https://github.com/edermartioli/ExoplanetAnalysisTools/issues"
+Homepage = "https://github.com/edermartioli/exoplanet-analysis"
+Repository = "https://github.com/edermartioli/exoplanet-analysis"
+Issues = "https://github.com/edermartioli/exoplanet-analysis/issues"
 
 [project.scripts]
 transit_fit = "exoplanet_analysis.scripts.transit_fit:main"
@@ -72,6 +72,9 @@ fit_sparc4_transits = "exoplanet_analysis.scripts.fit_sparc4_transits:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+
+[tool.setuptools.dynamic]
+version = { attr = "exoplanet_analysis.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

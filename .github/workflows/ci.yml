@@ -1,0 +1,41 @@
+name: CI
+
+# Lightweight sanity check on every push and pull request to main: install the
+# package and confirm it imports, the version is readable, and the command-line
+# tools respond to -h. This does not run the full MCMC test suite.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the package
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Import and version check
+        run: |
+          python -c "import exoplanet_analysis as e; print('version', e.__version__); [getattr(e, m) for m in e.__all__]; print('all modules import OK')"
+
+      - name: Command-line tools respond to -h
+        run: |
+          set -e
+          for cmd in transit_fit rv_fit transit_rv_fit rm_fit system_params gls_analysis get_derived_parameters; do
+            echo "checking $cmd -h"
+            $cmd -h > /dev/null
+          done
+          echo "command-line tools OK"

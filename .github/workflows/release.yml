@@ -1,0 +1,51 @@
+name: Build and release
+
+# Runs whenever a version tag (e.g. v1.4.1) is pushed. It builds the package,
+# checks that the tag matches the version declared in the package, and creates
+# a GitHub Release with the built artifacts attached.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write   # needed to create the GitHub Release
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build
+
+      - name: Verify the tag matches the package version
+        run: |
+          PKG_VERSION=$(python -c "import re,sys; s=open('src/exoplanet_analysis/__init__.py').read(); m=re.search(r'__version__\\s*=\\s*[\"\\']([^\"\\']+)[\"\\']', s); print(m.group(1))")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "Package version: $PKG_VERSION"
+          echo "Tag version:     $TAG_VERSION"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package version $PKG_VERSION. Bump __version__ in src/exoplanet_analysis/__init__.py and retag."
+            exit 1
+          fi
+
+      - name: Build the sdist and wheel
+        run: python -m build
+
+      - name: Create the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Exoplanet Analysis Tools ${{ github.ref_name }}"
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
