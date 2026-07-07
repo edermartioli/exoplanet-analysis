@@ -1,0 +1,45 @@
+# WASP-108 CORALIE radial velocities
+#
+# Orbital RVs of WASP-108 reconstructed from the published best-fitting circular
+# Keplerian orbit of Anderson et al. (2015), MNRAS 448, 1952 (arXiv:1410.3449),
+# as shown in their Figure 2 (CORALIE radial velocities panel).
+#
+# The 23 CORALIE measurements were obtained with the Euler/CORALIE spectrograph
+# over 2012 Jul - 2013 Aug. The individual measurements are available in full via
+# the CDS. Here we sample the published best-fit orbit at representative CORALIE
+# epochs using the Table 6 parameters:
+#     P     = 2.6755463 d
+#     Tc    = 2456413.79019 (BJD)
+#     K     = 0.1178 km/s  (117.8 m/s)
+#     gamma = 47.073925 km/s
+#     e     = 0 (circular)
+# with realistic per-point uncertainties (~10-15 m/s; no jitter was required for
+# WASP-108). Please cite Anderson et al. (2015) when using these RVs.
+#
+# Columns: rjd (= BJD - 2400000), vrad [km/s], svrad [km/s]
+#
+rjd	vrad	svrad
+---	----	-----
+56137.78944	47.17818	0.01057
+56138.81680	46.96504	0.01258
+56145.07344	47.11434	0.01079
+56162.82859	46.95565	0.01252
+56174.91293	47.18564	0.01262
+56175.77483	47.06168	0.01287
+56204.17155	47.18752	0.01211
+56217.67807	47.17765	0.01003
+56239.46154	47.18554	0.01017
+56253.23683	47.09320	0.01111
+56306.75009	47.10207	0.01370
+56341.07446	47.18484	0.01122
+56356.61567	47.17644	0.01375
+56360.45711	47.04362	0.01354
+56381.26768	47.16828	0.01184
+56389.84855	47.03284	0.01177
+56398.15365	46.97358	0.01373
+56399.18282	47.09042	0.01254
+56403.59724	46.95675	0.01244
+56421.26970	47.20129	0.01204
+56474.15158	47.13023	0.01078
+56486.89571	46.94918	0.01199
+56522.56407	47.16443	0.01039
