@@ -58,9 +58,15 @@ __MACOSX/
 *_pairsplot.png
 *_mcmc_samples*
 
-# ...but keep committed example and input files under examples/ and notebooks/data/
+# ...but keep committed example and input files under examples/
 !examples/**
-!notebooks/data/**
+
+# Tutorial datasets are NOT bundled in the repo (they are downloaded on demand
+# from Google Drive by exoplanet_analysis.datasets). Ignore everything under
+# notebooks/data/ except the explanatory README.
+notebooks/data/**
+!notebooks/data/
+!notebooks/data/README.md
 
 # Local data
 mastDownload/

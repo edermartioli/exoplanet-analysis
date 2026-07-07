@@ -3,6 +3,29 @@
 All notable changes to **Exoplanet Analysis Tools** are documented here. This
 project follows [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
 
+## [1.6.0]
+
+- The tutorial datasets are no longer bundled in the repository, making it much
+  lighter. They are hosted on Google Drive and downloaded on demand into
+  `notebooks/data/` by the new `exoplanet_analysis.datasets` helper
+  (`datasets.ensure(...)` / `datasets.download_all()`), which uses `gdown`.
+- Each tutorial notebook now downloads only the data it needs, on first run, and
+  reuses the local copy thereafter. Added a `[tutorials]` optional-dependency
+  extra (`pip install "exoplanet-analysis-tools[tutorials]"`) and a
+  `notebooks/data/README.md` with instructions.
+
+## [1.5.0]
+
+- New tutorial notebook 07: Gaussian-Process modelling of stellar activity and
+  RV activity-indicator diagnostics, using the real TOI-1736 data of Martioli et
+  al. (2023). It fits a quasi-periodic rotation GP to the TESS photometry
+  (recovering Prot ~ 9.8 d), shows GLS periodograms of the RVs and of the FWHM,
+  BIS, S-index and H-alpha indicators, and compares RV-vs-activity correlations
+  before and after removing the two-planet orbit (illustrating that the RVs are
+  not strongly contaminated by activity).
+- Added the TOI-1736 SOPHIE RVs (with activity indicators) and TESS light curves
+  under `notebooks/data/TOI-1736/`.
+
 ## [1.4.1]
 
 - The Rossiter-McLaughlin limb-darkening coefficient is now tied to the transit

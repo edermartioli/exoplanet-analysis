@@ -26,11 +26,12 @@ or run any of them with ``-h`` (e.g. ``transit_fit -h``, ``rv_fit -h``,
 
 import importlib
 
-__version__ = "1.4.1"
+__version__ = "1.6.0"
 
 # Submodules are imported lazily (PEP 562) so that `import exoplanet_analysis`
 # remains fast and does not require every optional heavy dependency upfront.
 _SUBMODULES = (
+    "datasets",
     "exoplanetlib",
     "fitlib",
     "gp_lib",

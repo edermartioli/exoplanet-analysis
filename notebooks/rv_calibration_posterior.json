@@ -1,0 +1,45 @@
+{
+    "_format": "exoplanet_analysis posterior",
+    "_source": "rv_calibration_posterior.pars",
+    "parameters": {
+        "rv_d00": {
+            "value": 47.05705698389786,
+            "error": [
+                0.03102519218477795,
+                0.0548371437927031
+            ],
+            "prior": "Normal"
+        },
+        "jitter_d00": {
+            "value": 0.0,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "rv_d01": {
+            "value": 48.541192040408035,
+            "error": [
+                0.0007973496673585601,
+                0.0005411578098275527
+            ],
+            "prior": "Normal"
+        },
+        "jitter_d01": {
+            "value": 0.0,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "rv_d02": {
+            "value": 48.53448123785997,
+            "error": [
+                0.0006403530427547821,
+                0.0010516333613921347
+            ],
+            "prior": "Normal"
+        },
+        "jitter_d02": {
+            "value": 0.0,
+            "error": null,
+            "prior": "FIXED"
+        }
+    }
+}

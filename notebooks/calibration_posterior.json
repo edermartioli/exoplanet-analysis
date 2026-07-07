@@ -1,0 +1,91 @@
+{
+    "_format": "exoplanet_analysis posterior",
+    "_source": "calibration_posterior.pars",
+    "parameters": {
+        "orderOfPolynomial": {
+            "value": 1,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d00c0": {
+            "value": 1.0007038286754057,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d01c0": {
+            "value": 1.000014224222728,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d02c0": {
+            "value": 0.9996390257562909,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d03c0": {
+            "value": 1.0001465380191805,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d04c0": {
+            "value": 0.9994620518250894,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d05c0": {
+            "value": 1.000397002696991,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d06c0": {
+            "value": 0.9994436935944987,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d07c0": {
+            "value": 0.9990437759293448,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d08c0": {
+            "value": 1.0002848278908498,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d09c0": {
+            "value": 1.0000692341062756,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d10c0": {
+            "value": 0.9997940659523007,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d11c0": {
+            "value": 1.000141898790995,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d12c0": {
+            "value": 1.0003653197061444,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d13c0": {
+            "value": 1.0001518070697788,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d14c0": {
+            "value": 0.9999015857191645,
+            "error": null,
+            "prior": "FIXED"
+        },
+        "d15c0": {
+            "value": 1.0000038556486588,
+            "error": null,
+            "prior": "FIXED"
+        }
+    }
+}
